@@ -1,13 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Download, Trash2 } from 'lucide-react';
+import { RefreshCw, Download, Trash2, Lock, Unlock } from 'lucide-react';
 
-const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzM4swNgtrUz7UZNykeh4Lob2MISDM6n4axv8BoAjdbFz3R0QX8iVf0yD3nkp88urlk/exec';
+const GOOGLE_SHEETS_URL = import.meta.env.VITE_GOOGLE_SHEETS_URL;
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 
 export default function CurrentList() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  const handlePasswordSubmit = () => {
+    if (passwordInput === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      setShowPasswordModal(false);
+      setPasswordInput('');
+      setPasswordError('');
+    } else {
+      setPasswordError('Incorrect password');
+      setPasswordInput('');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+  };
 
   const fetchOrders = async () => {
     try {
@@ -64,6 +85,11 @@ export default function CurrentList() {
   };
 
   const togglePaid = async (order) => {
+    if (!isAuthenticated) {
+      setShowPasswordModal(true);
+      return;
+    }
+
     try {
       const updatedOrder = {
         ...order,
@@ -110,6 +136,51 @@ export default function CurrentList() {
 
   return (
     <div className="max-w-6xl mx-auto p-4">
+      {/* Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Lock size={24} className="text-indigo-600" />
+              <h3 className="font-bold text-xl text-gray-900">Admin Access Required</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">Enter the password to mark orders as paid.</p>
+            <input
+              type="password"
+              value={passwordInput}
+              onChange={(e) => {
+                setPasswordInput(e.target.value);
+                setPasswordError('');
+              }}
+              onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+              placeholder="Enter password"
+              className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"
+              autoFocus
+            />
+            {passwordError && (
+              <p className="text-red-600 text-sm mb-4 font-medium">{passwordError}</p>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setPasswordInput('');
+                  setPasswordError('');
+                }}
+                className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePasswordSubmit}
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+              >
+                Unlock
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="bg-white rounded-lg shadow-lg p-6 mt-6">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -120,7 +191,16 @@ export default function CurrentList() {
               </p>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {isAuthenticated && (
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-md hover:bg-amber-700 transition-colors text-sm"
+              >
+                <Unlock size={16} />
+                Logout
+              </button>
+            )}
             <button
               onClick={fetchOrders}
               disabled={loading}
@@ -167,6 +247,7 @@ export default function CurrentList() {
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Jersey Name</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Options</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Fulfillment</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -177,7 +258,7 @@ export default function CurrentList() {
                     <tr key={order.id || index} className={order.paid === 'Yes' ? 'bg-green-50' : ''}>
                       <td className="px-4 py-3 text-sm">{index + 1}</td>
                       <td className="px-4 py-3 text-sm font-medium">{order.name}</td>
-                      <td className="px-4 py-3 text-sm">{order.number}</td>
+                      <td className="px-4 py-3 text-sm">{order.number || '-'}</td>
                       <td className="px-4 py-3 text-sm">{order.size}</td>
                       <td className="px-4 py-3 text-sm">{order.nameOnJersey || '-'}</td>
                       <td className="px-4 py-3 text-sm">
@@ -193,18 +274,26 @@ export default function CurrentList() {
                         )}
                         {order.isMuslimah !== 'Yes' && order.isLongSleeve !== 'Yes' && '-'}
                       </td>
+                      <td className="px-4 py-3 text-sm">
+                        {order.fulfillment === 'delivery' ? (
+                          <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded text-xs font-semibold">🚚 Delivery</span>
+                        ) : (
+                          <span className="bg-green-100 text-green-800 px-3 py-1 rounded text-xs font-semibold">🏪 Pickup</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-sm font-semibold">
                         RM {order.price || calculatePrice(order)}
                       </td>
                       <td className="px-4 py-3 text-sm">
                         <button
                           onClick={() => togglePaid(order)}
-                          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                          className={`px-3 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
                             order.paid === 'Yes'
                               ? 'bg-green-600 text-white hover:bg-green-700'
-                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                              : isAuthenticated ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-gray-100 text-gray-500 cursor-not-allowed'
                           }`}
                         >
+                          {!isAuthenticated && <Lock size={14} />}
                           {order.paid === 'Yes' ? '✅ Paid' : 'Mark Paid'}
                         </button>
                       </td>

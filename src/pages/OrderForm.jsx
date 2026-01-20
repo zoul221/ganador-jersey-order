@@ -1,13 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { RefreshCw, Plus, Trash2, ChevronDown, ChevronRight, Shirt, Image as ImageIcon, X, Maximize2 } from 'lucide-react';
 
-const GOOGLE_SHEETS_URL =
-  'https://script.google.com/macros/s/AKfycbzM4swNgtrUz7UZNykeh4Lob2MISDM6n4axv8BoAjdbFz3R0QX8iVf0yD3nkp88urlk/exec';
+const GOOGLE_SHEETS_URL = import.meta.env.VITE_GOOGLE_SHEETS_URL;
 
 const DELIVERY_FEE = 5;
 const SIZES = [
   'XS','S','M','L','XL','2XL','3XL','4XL','5XL','6XL','7XL','8XL',
-  '1/2 yr','3/4 yr','5/6 yr','7/8 yr'
+  '3/4 yr','5/6 yr','7/8 yr'
 ];
 
 function blankItem() {
@@ -102,6 +101,39 @@ function SizeChartModal({ isOpen, onClose }) {
   );
 }
 
+function QRCodeModal({ isOpen, onClose }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-xl text-white">Scan to Pay</h3>
+            <button
+              onClick={onClose}
+              className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+            >
+              <X size={24} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 bg-gray-50 flex flex-col items-center">
+          <div className="bg-white rounded-lg overflow-hidden shadow-md mb-4">
+            <img 
+              src="/zul-maybank-qr.jpeg" 
+              alt="Maybank QR Code" 
+              className="w-full h-auto"
+            />
+          </div>
+          <p className="text-sm text-gray-600 text-center font-medium">Scan with your banking app to transfer</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SizeChartImages() {
   const [tab, setTab] = useState('adult');
 
@@ -175,6 +207,7 @@ export default function OrderForm() {
   const [loading, setLoading] = useState(false);
   const [syncStatus, setSyncStatus] = useState('');
   const [showSizeChart, setShowSizeChart] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
 
   const setItemField = (id, field, value) => {
     setItems(prev => prev.map(it => (it.id === id ? { ...it, [field]: value } : it)));
@@ -203,6 +236,17 @@ export default function OrderForm() {
   const deliveryFeeApplied = fulfillment === 'delivery' ? DELIVERY_FEE : 0;
   const grandTotal = subtotal + deliveryFeeApplied;
 
+  // Calculate summary statistics
+  const validItems = items.filter(it => it.size);
+  const baseSubtotal = validItems.reduce((sum, it) => {
+    let price = it.size.includes('yr') ? 38 : 50;
+    return sum + price;
+  }, 0);
+  const totalAddOns = subtotal - baseSubtotal;
+  const longSleeveCount = items.filter(it => it.isLongSleeve && it.size).length;
+  const muslimaCount = items.filter(it => it.isMuslimah && it.size).length;
+  const largeSizeCount = items.filter(it => it.size && ['4XL','5XL','6XL','7XL','8XL'].includes(it.size)).length;
+
   const numbersCount = useMemo(() => {
     const map = new Map();
     items.forEach(it => {
@@ -227,18 +271,21 @@ export default function OrderForm() {
       return false;
     }
     for (const [idx, it] of items.entries()) {
-      if (it.size === '' || it.number === '' || it.number === null || it.number === undefined) {
-        alert(`Jersey ${idx + 1}: Please fill in Jersey Number and Size`);
+      if (it.size === '') {
+        alert(`Jersey ${idx + 1}: Please fill in Size`);
         return false;
       }
 
+      // Jersey Number is optional, but if provided, validate it
       const nStr = String(it.number).trim();
-      const isDigits = /^\d{1,3}$/.test(nStr);
-      const n = Number(nStr);
+      if (nStr !== '') {
+        const isDigits = /^\d{1,3}$/.test(nStr);
+        const n = Number(nStr);
 
-      if (!isDigits || !Number.isInteger(n) || n < 0 || n > 100) {
-        alert(`Jersey ${idx + 1}: Jersey Number must be an integer between 0 and 100`);
-        return false;
+        if (!isDigits || !Number.isInteger(n) || n < 0 || n > 100) {
+          alert(`Jersey ${idx + 1}: Jersey Number must be an integer between 0 and 100`);
+          return false;
+        }
       }
     }
     if (fulfillment === 'delivery') {
@@ -360,6 +407,8 @@ export default function OrderForm() {
     <div className="max-w-7xl mx-auto p-3 sm:p-4 lg:p-6">
       {/* Size Chart Modal */}
       <SizeChartModal isOpen={showSizeChart} onClose={() => setShowSizeChart(false)} />
+      {/* QR Code Modal */}
+      <QRCodeModal isOpen={showQRCode} onClose={() => setShowQRCode(false)} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
         {/* Jersey Image Section */}
@@ -574,7 +623,7 @@ export default function OrderForm() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                             <div>
                               <label className="block text-xs font-semibold text-gray-700 mb-1">
-                                Jersey Number *
+                                Jersey Number (optional)
                               </label>
                               <input
                                 type="number"
@@ -694,8 +743,38 @@ export default function OrderForm() {
 
           {/* Total and Submit */}
           <div className="p-4 sm:p-6 bg-gradient-to-br from-gray-50 to-gray-100 border-t-2 border-gray-200">
-            <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="bg-white rounded-xl p-4 shadow-sm mb-4">
+              <div className="mb-4 pb-4 border-b border-gray-200">
+                <h4 className="text-sm font-bold text-gray-700 mb-3">Order Summary</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3">
+                    <div className="text-xs text-gray-600 font-medium">Total Jerseys</div>
+                    <div className="text-2xl font-bold text-blue-600">{validItems.length}</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3">
+                    <div className="text-xs text-gray-600 font-medium">Long Sleeve</div>
+                    <div className="text-2xl font-bold text-purple-600">{longSleeveCount}</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg p-3">
+                    <div className="text-xs text-gray-600 font-medium">Muslimah</div>
+                    <div className="text-2xl font-bold text-pink-600">{muslimaCount}</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3">
+                    <div className="text-xs text-gray-600 font-medium">Large Sizes</div>
+                    <div className="text-2xl font-bold text-orange-600">{largeSizeCount}</div>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-700 font-medium">Base Total:</span>
+                  <span className="text-lg font-bold text-gray-900">RM {baseSubtotal}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-700 font-medium">Add-ons:</span>
+                  <span className="text-lg font-bold text-indigo-600">+RM {totalAddOns}</span>
+                </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-700 font-medium">Subtotal:</span>
                   <span className="text-lg font-bold text-gray-900">RM {subtotal}</span>
@@ -709,6 +788,7 @@ export default function OrderForm() {
                   <span className="text-2xl font-bold text-indigo-600">RM {grandTotal}</span>
                 </div>
               </div>
+            </div>
 
               <label className="mt-4 flex items-center gap-2 cursor-pointer bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition-colors">
                 <input
@@ -730,8 +810,8 @@ export default function OrderForm() {
               {loading ? 'Submitting...' : 'Submit Order'}
             </button>
           </div>
-        </div>
       </div>
+      
 
       {/* Payment Info */}
       <div className="mt-6 bg-white rounded-xl shadow-lg p-4 sm:p-6 border-2 border-gray-200">
@@ -752,9 +832,16 @@ export default function OrderForm() {
             <span className="text-sm font-bold text-gray-900">Zulhilmi Omar</span>
           </div>
           <div className="mt-3 pt-3 border-t-2 border-blue-200">
-            <p className="text-xs text-gray-600 italic">
+            <p className="text-xs text-gray-600 italic mb-3">
               💡 Reference format: <span className="font-semibold">name - jersey</span>
             </p>
+            <button
+              onClick={() => setShowQRCode(true)}
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-2 px-4 rounded-lg font-semibold text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+            >
+              <ImageIcon size={16} />
+              Scan QR Code
+            </button>
           </div>
         </div>
       </div>

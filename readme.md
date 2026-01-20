@@ -1,6 +1,7 @@
 # Ganador Jersey Order 2026
 
 A web application for collecting and managing jersey orders for the Ganador team.
+Created by Zulhilmi Bin Omar
 
 ## Features
 
@@ -15,7 +16,7 @@ A web application for collecting and managing jersey orders for the Ganador team
 
 1. Clone the repository:
 ```bash
-   git clone https://github.com/YOUR_USERNAME/ganador-webapp.git
+   git clone https://github.com/YOUR_USERNAME/ganador-jersey-order.git
    cd ganador-webapp
 ```
 
@@ -35,18 +36,6 @@ A web application for collecting and managing jersey orders for the Ganador team
 ```bash
 npm run build
 ```
-
-## Google Sheets Integration
-
-Follow the in-app instructions to connect your Google Sheets as a database.
-
-## Deployment
-
-You can deploy this app to:
-- Vercel
-- Netlify
-- GitHub Pages
-- Any static hosting service
 
 ## License
 
