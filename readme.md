@@ -17,7 +17,7 @@ Created by Zulhilmi Bin Omar
 1. Clone the repository:
 ```bash
    git clone https://github.com/YOUR_USERNAME/ganador-jersey-order.git
-   cd ganador-webapp
+   cd ganador-jersey-order
 ```
 
 2. Install dependencies:
