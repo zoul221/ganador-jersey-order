@@ -843,6 +843,14 @@ export default function OrderForm() {
               Scan QR Code
             </button>
           </div>
+          <div className="mt-4 pt-4 border-t-2 border-blue-200 bg-amber-50 rounded-lg p-3">
+            <p className="text-xs text-amber-800 font-medium mb-2">
+              ⚠️ Important:Proof of Payment
+            </p>
+            <p className="text-xs text-amber-700">
+              After making the transfer, please send a screenshot of your payment receipt to <span className="font-bold">Ozil via WhatsApp</span> to confirm your payment.
+            </p>
+          </div>
         </div>
       </div>
     </div>
