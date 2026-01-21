@@ -281,10 +281,11 @@ export default function CurrentList() {
                   <span className="font-semibold">Pending:</span>
                   <p className="text-lg font-bold text-orange-600">{pendingOrders}</p>
                 </div>
+                { isAuthenticated ? (
                 <div className="col-span-2 sm:col-span-1">
                   <span className="font-semibold">Total Amount:</span>
                   <p className="text-lg font-bold text-purple-600">RM {totalAmount}</p>
-                </div>
+                </div> ) : (<div className="col-span-2 sm:col-span-1"></div>) }
               </div>
               {searchQuery && (
                 <p className="mt-4 text-xs md:text-sm text-gray-600">
