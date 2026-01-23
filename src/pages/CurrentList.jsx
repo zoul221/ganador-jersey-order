@@ -10,6 +10,7 @@ export default function CurrentList() {
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [updating, setUpdating] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
@@ -100,6 +101,7 @@ export default function CurrentList() {
     }
 
     try {
+      setUpdating(order.id);
       const updatedOrder = {
         ...order,
         paid: order.paid === 'Yes' ? 'No' : 'Yes'
@@ -122,6 +124,8 @@ export default function CurrentList() {
     } catch (error) {
       console.error('Error updating payment status:', error);
       alert('Failed to update payment status. Please try again.');
+    } finally {
+      setUpdating(null);
     }
   };
 
@@ -131,8 +135,8 @@ export default function CurrentList() {
 
   const calculatePrice = (order) => {
     let price = order.size?.includes('yr') ? 38 : 50;
-    if (order.isLongSleeve === 'Yes') price += 5;
-    if (order.isMuslimah === 'Yes') price += 10;
+    if (order.isLongSleeve === true) price += 5;
+    if (order.isMuslimah === true) price += 10;
     if (['4XL', '5XL', '6XL'].includes(order.size)) price += 5;
     if (['7XL', '8XL'].includes(order.size)) price += 10;
     return price;
@@ -164,6 +168,19 @@ export default function CurrentList() {
 
   return (
     <div className="max-w-6xl mx-auto p-4">
+      {/* Update Loading Modal */}
+      {updating && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 z-40 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-2xl p-8 flex flex-col items-center gap-4">
+            <RefreshCw size={48} className="animate-spin text-indigo-600" />
+            <div className="text-center">
+              <p className="font-semibold text-gray-900">Updating Order...</p>
+              <p className="text-sm text-gray-600 mt-1">Sending update to Google Sheets</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Password Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -322,17 +339,17 @@ export default function CurrentList() {
                         <td className="px-4 py-3 text-sm">{order.size}</td>
                         <td className="px-4 py-3 text-sm">{order.nameOnJersey || '-'}</td>
                         <td className="px-4 py-3 text-sm">
-                          {order.isMuslimah === 'Yes' && (
+                          {order.isMuslimah === true && (
                             <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs mr-1">
                               Muslimah
                             </span>
                           )}
-                          {order.isLongSleeve === 'Yes' && (
+                          {order.isLongSleeve === true && (
                             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
                               Long Sleeve
                             </span>
                           )}
-                          {order.isMuslimah !== 'Yes' && order.isLongSleeve !== 'Yes' && '-'}
+                          {order.isMuslimah !== true && order.isLongSleeve !== true && '-'}
                         </td>
                         <td className="px-4 py-3 text-sm">
                           {order.fulfillment === 'delivery' ? (
@@ -347,14 +364,19 @@ export default function CurrentList() {
                         <td className="px-4 py-3 text-sm">
                           <button
                             onClick={() => togglePaid(order)}
+                            disabled={updating === order.id}
                             className={`px-3 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
                               order.paid === 'Yes'
                                 ? 'bg-green-600 text-white hover:bg-green-700'
-                                : isAuthenticated ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                            }`}
+                                : isAuthenticated && updating !== order.id ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                            } ${updating === order.id ? 'opacity-50' : ''}`}
                           >
                             {!isAuthenticated && <Lock size={14} />}
-                            {order.paid === 'Yes' ? '✅ Paid' : 'Mark Paid'}
+                            {updating === order.id ? (
+                              <RefreshCw size={14} className="animate-spin" />
+                            ) : (
+                              order.paid === 'Yes' ? '✅ Paid' : 'Mark Paid'
+                            )}
                           </button>
                         </td>
                         <td className="px-4 py-3 text-sm">
@@ -446,12 +468,12 @@ export default function CurrentList() {
 
                       <div className="py-1 border-t border-gray-200 mb-2">
                         <div className="flex flex-wrap gap-1">
-                          {order.isMuslimah === 'Yes' && (
+                          {order.isMuslimah === true && (
                             <span className="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded text-xs">
                               Muslimah
                             </span>
                           )}
-                          {order.isLongSleeve === 'Yes' && (
+                          {order.isLongSleeve === true && (
                             <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-xs">
                               Long Sleeve
                             </span>
@@ -470,13 +492,21 @@ export default function CurrentList() {
 
                       <button
                         onClick={() => togglePaid(order)}
-                        className={`w-full py-1.5 rounded text-xs font-medium transition-colors ${
+                        disabled={updating === order.id}
+                        className={`w-full py-1.5 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
                           order.paid === 'Yes'
                             ? 'bg-green-600 text-white hover:bg-green-700'
-                            : isAuthenticated ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                        }`}
+                            : isAuthenticated && updating !== order.id ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                        } ${updating === order.id ? 'opacity-50' : ''}`}
                       >
-                        {order.paid === 'Yes' ? '✅ Paid' : 'Mark Paid'}
+                        {updating === order.id ? (
+                          <>
+                            <RefreshCw size={12} className="animate-spin" />
+                            <span>Updating...</span>
+                          </>
+                        ) : (
+                          order.paid === 'Yes' ? '✅ Paid' : 'Mark Paid'
+                        )}
                       </button>
                     </div>
                   );
