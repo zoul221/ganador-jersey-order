@@ -466,20 +466,22 @@ export default function CurrentList() {
                         </div>
                       </div>
 
-                      <div className="py-1 border-t border-gray-200 mb-2">
-                        <div className="flex flex-wrap gap-1">
-                          {(order.isMuslimah === true || order.isMuslimah === 'Yes') && (
-                            <span className="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded text-xs">
-                              Muslimah
-                            </span>
-                          )}
-                          {(order.isLongSleeve === true || order.isLongSleeve === 'Yes') && (
-                            <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-xs">
-                              Long Sleeve
-                            </span>
-                          )}
+                      {((order.isMuslimah === true || order.isMuslimah === 'Yes') || (order.isLongSleeve === true || order.isLongSleeve === 'Yes')) && (
+                        <div className="py-1 border-t border-gray-200 mb-2">
+                          <div className="flex flex-wrap gap-1">
+                            {(order.isMuslimah === true || order.isMuslimah === 'Yes') && (
+                              <span className="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded text-xs">
+                                Muslimah
+                              </span>
+                            )}
+                            {(order.isLongSleeve === true || order.isLongSleeve === 'Yes') && (
+                              <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-xs">
+                                Long Sleeve
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       <div className="py-1 border-t border-gray-200 mb-2">
                         <div className="flex justify-between items-center">
