@@ -102,9 +102,13 @@ export default function CurrentList() {
 
     try {
       setUpdating(order.id);
-      const updatedOrder = {
-        ...order,
-        paid: order.paid === 'Yes' ? 'No' : 'Yes'
+      const newPaidStatus = order.paid === 'Yes' ? 'No' : 'Yes';
+      
+      // Only send the fields needed to update payment status
+      const updatePayload = {
+        action: 'updatePaid',
+        id: order.id,
+        paid: newPaidStatus
       };
 
       await fetch(GOOGLE_SHEETS_URL, {
@@ -113,10 +117,11 @@ export default function CurrentList() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updatedOrder)
+        body: JSON.stringify(updatePayload)
       });
 
       // Update local state
+      const updatedOrder = { ...order, paid: newPaidStatus };
       setOrders(orders.map(o => 
         o.id === order.id ? updatedOrder : o
       ));
