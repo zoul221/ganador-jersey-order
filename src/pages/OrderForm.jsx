@@ -452,9 +452,12 @@ export default function OrderForm() {
                     <span>• Long Sleeve</span>
                     <span className="font-semibold">+RM 5</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>• Muslimah</span>
-                    <span className="font-semibold">+RM 10</span>
+                  <div>
+                    <div className="flex justify-between">
+                      <span>• Muslimah (Modest Cut)</span>
+                      <span className="font-semibold">+RM 10</span>
+                    </div>
+                    <p className="text-xs text-blue-700 mt-1 ml-4">More modest cutting with long sleeves included</p>
                   </div>
                   <div className="flex justify-between">
                     <span>• 4XL - 6XL</span>
@@ -694,14 +697,14 @@ export default function OrderForm() {
                               <span className="text-xs font-medium text-gray-700">Long Sleeve (+RM 5)</span>
                             </label>
 
-                            <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-lg border-2 border-gray-200 hover:border-indigo-300 transition-colors">
+                            <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-lg border-2 border-gray-200 hover:border-indigo-300 transition-colors" title="Modest cutting with long sleeves included">
                               <input
                                 type="checkbox"
                                 checked={item.isMuslimah}
                                 onChange={(e) => setItemField(item.id, 'isMuslimah', e.target.checked)}
                                 className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                               />
-                              <span className="text-xs font-medium text-gray-700">Muslimah (+RM 10)</span>
+                              <span className="text-xs font-medium text-gray-700">Muslimah - Modest Cut with long sleeves (+RM 10)</span>
                             </label>
                           </div>
 
