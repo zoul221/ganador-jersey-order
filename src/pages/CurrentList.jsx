@@ -16,6 +16,7 @@ export default function CurrentList() {
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sizeFilter, setSizeFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
   const handlePasswordSubmit = () => {
@@ -147,12 +148,30 @@ export default function CurrentList() {
     return price;
   };
 
-  // Filter orders by search query
+  const availableSizes = useMemo(() => {
+    const sizes = [...new Set(orders.map(o => o.size).filter(Boolean))];
+    const sizeOrder = ['4yr', '6yr', '8yr', '10yr', '12yr', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL', '8XL'];
+    return sizes.sort((a, b) => {
+      const ai = sizeOrder.indexOf(a);
+      const bi = sizeOrder.indexOf(b);
+      if (ai === -1 && bi === -1) return a.localeCompare(b);
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+  }, [orders]);
+
+  // Filter orders by search query and size
   const filteredOrders = useMemo(() => {
-    return orders.filter(order =>
-      order.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [orders, searchQuery]);
+    const q = searchQuery.trim().toLowerCase();
+    return orders.filter(order => {
+      const matchesSearch = !q ||
+        order.name.toLowerCase().includes(q) ||
+        (order.number != null && order.number.toString().trim().includes(q));
+      const matchesSize = !sizeFilter || order.size === sizeFilter;
+      return matchesSearch && matchesSize;
+    });
+  }, [orders, searchQuery, sizeFilter]);
 
   // Paginate filtered orders
   const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
@@ -161,15 +180,17 @@ export default function CurrentList() {
     return filteredOrders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredOrders, currentPage]);
 
-  // Reset to page 1 when search query changes
+  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, sizeFilter]);
 
-  const totalOrders = orders.length;
-  const paidOrders = orders.filter(o => o.paid === 'Yes').length;
+  const isFiltered = searchQuery.trim() || sizeFilter;
+  const statOrders = isFiltered ? filteredOrders : orders;
+  const totalOrders = statOrders.length;
+  const paidOrders = statOrders.filter(o => o.paid === 'Yes').length;
   const pendingOrders = totalOrders - paidOrders;
-  const totalAmount = orders.reduce((sum, o) => sum + (o.price || calculatePrice(o)), 0);
+  const totalAmount = statOrders.reduce((sum, o) => sum + (o.price || calculatePrice(o)), 0);
 
   return (
     <div className="max-w-6xl mx-auto p-4">
@@ -264,16 +285,28 @@ export default function CurrentList() {
             </div>
           </div>
 
-          {/* Search Input */}
-          <div className="relative">
-            <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-            />
+          {/* Search and Filter Row */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by name or jersey number..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+              />
+            </div>
+            <select
+              value={sizeFilter}
+              onChange={(e) => setSizeFilter(e.target.value)}
+              className="px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
+            >
+              <option value="">All Sizes</option>
+              {availableSizes.map(size => (
+                <option key={size} value={size}>{size}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -290,6 +323,11 @@ export default function CurrentList() {
           <>
             {/* Summary Stats */}
             <div className="mb-6 p-4 bg-gray-50 rounded-md">
+              {isFiltered && (
+                <p className="text-xs text-indigo-600 font-medium mb-3">
+                  Showing filtered results ({filteredOrders.length} of {orders.length} orders)
+                </p>
+              )}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 text-xs md:text-sm">
                 <div>
                   <span className="font-semibold">Total Orders:</span>
@@ -309,11 +347,6 @@ export default function CurrentList() {
                   <p className="text-lg font-bold text-purple-600">RM {totalAmount}</p>
                 </div> ) : (<div className="col-span-2 sm:col-span-1"></div>) }
               </div>
-              {searchQuery && (
-                <p className="mt-4 text-xs md:text-sm text-gray-600">
-                  Showing {paginatedOrders.length} of {filteredOrders.length} matching orders
-                </p>
-              )}
             </div>
 
             {/* Desktop Table View */}
