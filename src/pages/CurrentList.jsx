@@ -17,6 +17,7 @@ export default function CurrentList() {
   const [passwordError, setPasswordError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sizeFilter, setSizeFilter] = useState('');
+  const [fulfillmentFilter, setFulfillmentFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
   const handlePasswordSubmit = () => {
@@ -169,9 +170,10 @@ export default function CurrentList() {
         order.name.toLowerCase().includes(q) ||
         (order.number != null && order.number.toString().trim().includes(q));
       const matchesSize = !sizeFilter || order.size === sizeFilter;
-      return matchesSearch && matchesSize;
+      const matchesFulfillment = !fulfillmentFilter || order.fulfillment === fulfillmentFilter;
+      return matchesSearch && matchesSize && matchesFulfillment;
     });
-  }, [orders, searchQuery, sizeFilter]);
+  }, [orders, searchQuery, sizeFilter, fulfillmentFilter]);
 
   // Paginate filtered orders
   const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
@@ -183,9 +185,9 @@ export default function CurrentList() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, sizeFilter]);
+  }, [searchQuery, sizeFilter, fulfillmentFilter]);
 
-  const isFiltered = searchQuery.trim() || sizeFilter;
+  const isFiltered = searchQuery.trim() || sizeFilter || fulfillmentFilter;
   const statOrders = isFiltered ? filteredOrders : orders;
   const totalOrders = statOrders.length;
   const paidOrders = statOrders.filter(o => o.paid === 'Yes').length;
@@ -307,6 +309,15 @@ export default function CurrentList() {
                 <option key={size} value={size}>{size}</option>
               ))}
             </select>
+            <select
+              value={fulfillmentFilter}
+              onChange={(e) => setFulfillmentFilter(e.target.value)}
+              className="px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
+            >
+              <option value="">All</option>
+              <option value="delivery">🚚 Delivery</option>
+              <option value="pickup">🏪 Pickup</option>
+            </select>
           </div>
         </div>
 
@@ -361,6 +372,8 @@ export default function CurrentList() {
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Jersey Name</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Options</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Fulfillment</th>
+                    {isAuthenticated && <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Address</th>}
+                    {isAuthenticated && <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>}
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -396,6 +409,18 @@ export default function CurrentList() {
                             <span className="bg-green-100 text-green-800 px-3 py-1 rounded text-xs font-semibold">🏪 Pickup</span>
                           )}
                         </td>
+                        {isAuthenticated && (
+                          <td className="px-4 py-3 text-sm text-gray-600 max-w-[160px]">
+                            {order.fulfillment === 'delivery' && order.deliveryAddress
+                              ? order.deliveryAddress
+                              : '-'}
+                          </td>
+                        )}
+                        {isAuthenticated && (
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {order.contactPhone || '-'}
+                          </td>
+                        )}
                         <td className="px-4 py-3 text-sm font-semibold">
                           RM {order.price || calculatePrice(order)}
                         </td>
@@ -528,6 +553,12 @@ export default function CurrentList() {
                           </span>
                           <span className="font-bold text-indigo-600">RM {order.price || calculatePrice(order)}</span>
                         </div>
+                        {isAuthenticated && order.fulfillment === 'delivery' && order.deliveryAddress && (
+                          <p className="mt-1 text-gray-500">📍 {order.deliveryAddress}</p>
+                        )}
+                        {isAuthenticated && order.contactPhone && (
+                          <p className="mt-1 text-gray-500">📞 {order.contactPhone}</p>
+                        )}
                       </div>
 
                       <button
