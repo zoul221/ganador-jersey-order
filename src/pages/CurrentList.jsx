@@ -18,6 +18,7 @@ export default function CurrentList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sizeFilter, setSizeFilter] = useState('');
   const [fulfillmentFilter, setFulfillmentFilter] = useState('');
+  const [paidFilter, setPaidFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
   const handlePasswordSubmit = () => {
@@ -171,9 +172,10 @@ export default function CurrentList() {
         (order.number != null && order.number.toString().trim().includes(q));
       const matchesSize = !sizeFilter || order.size === sizeFilter;
       const matchesFulfillment = !fulfillmentFilter || order.fulfillment === fulfillmentFilter;
-      return matchesSearch && matchesSize && matchesFulfillment;
+      const matchesPaid = !paidFilter || order.paid === paidFilter;
+      return matchesSearch && matchesSize && matchesFulfillment && matchesPaid;
     });
-  }, [orders, searchQuery, sizeFilter, fulfillmentFilter]);
+  }, [orders, searchQuery, sizeFilter, fulfillmentFilter, paidFilter]);
 
   // Paginate filtered orders
   const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
@@ -185,9 +187,9 @@ export default function CurrentList() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, sizeFilter, fulfillmentFilter]);
+  }, [searchQuery, sizeFilter, fulfillmentFilter, paidFilter]);
 
-  const isFiltered = searchQuery.trim() || sizeFilter || fulfillmentFilter;
+  const isFiltered = searchQuery.trim() || sizeFilter || fulfillmentFilter || paidFilter;
   const statOrders = isFiltered ? filteredOrders : orders;
   const totalOrders = statOrders.length;
   const paidOrders = statOrders.filter(o => o.paid === 'Yes').length;
@@ -317,6 +319,15 @@ export default function CurrentList() {
               <option value="">All</option>
               <option value="delivery">🚚 Delivery</option>
               <option value="pickup">🏪 Pickup</option>
+            </select>
+            <select
+              value={paidFilter}
+              onChange={(e) => setPaidFilter(e.target.value)}
+              className="px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
+            >
+              <option value="">All Payment</option>
+              <option value="Yes">✅ Paid</option>
+              <option value="No">⏳ Unpaid</option>
             </select>
           </div>
         </div>
